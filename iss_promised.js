@@ -1,0 +1,43 @@
+const request = require('request-promise-native');
+
+
+const fetchMyIP = function() {
+  return request('https://api.ipify.org?format=json');
+};
+
+
+
+
+const fetchCoordsByIP = function(body) {
+  const ip = JSON.parse(body).ip;
+  return request(`https://freegeoip.app/json/${ip}`);
+};
+
+
+const fetchISSFlyOverTimes = function(body) {
+  const { latitude, longitude } = JSON.parse(body).data;
+  const url = `http://api.open-notify.org/iss-pass.json?lat=${latitude}&lon=${longitude}`;
+  return request(url);
+};
+
+
+
+
+const nextISSTimesForMyLocation = function() {
+  fetchMyIP()
+    .then(fetchCoordsByIP)
+    .then(fetchISSFlyOverTimes)
+    .then((body) => {
+      const data = JSON.parse(body);
+      const passTimes = data.response;
+      for (let i = 0; i < passTimes.length; i++) {
+        const dateData = new Date(0);
+        dateData.setUTCSeconds(passTimes[i].risetime);
+        console.log(`Next pass at ${dateData} for ${passTimes[i].duration} seconds!`);
+      }
+    })
+    .catch((error) => {
+      console.log("It didn't work: ", error.message);
+    });
+};
+module.exports = { nextISSTimesForMyLocation };
